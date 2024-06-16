@@ -12,5 +12,11 @@
     "@sveltejs/vite-plugin-svelte": "^3.0.2",
     "svelte": "^4.2.12",
     "vite": "^5.2.0"
+  },
+  "dependencies": {
+    "@vercel/postgres": "^0.8.0",
+    "graphql": "^16.8.2",
+    "graphql-request": "^7.0.1",
+    "svelte-routing": "^2.13.0"
   }
 }
