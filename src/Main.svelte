@@ -3,6 +3,8 @@
 import { onMount } from 'svelte';
 import { gql } from './utils';
 import { writable } from 'svelte/store';
+import Loader from './Loader.svelte';
+    import Sales from './Sales.svelte';
 
 let products = {
   'Dryck': [],
@@ -57,10 +59,12 @@ const getProducts = async () => {
       }
     }`);
   const productsByCategory = productsData.products.reduce((acc, curr) => {
-    if (!acc[curr.category]) {
-      acc[curr.category] = [];
+    let cat = curr.category;
+    if (cat == 'Godis') cat = 'Mat';
+    if (!acc[cat]) {
+      acc[cat] = [];
     }
-    acc[curr.category].push(curr);
+    acc[cat].push(curr);
     return acc;
   }, {});
   products = productsByCategory;
@@ -68,7 +72,7 @@ const getProducts = async () => {
 const getSales = async () => {
   const salesData = await gql(`
     query GetSales {
-      sales(orderBy: time_DESC) {
+      sales(orderBy: time_DESC, first: 100) {
         soldItems {
           price
           product {
@@ -130,6 +134,7 @@ $: console.log($cart);
     return acc + curr.product.price * curr.quantity;
   }, 0)} kr</div>
   </div>
+  {#if !checkoutWaiting}
   <div class="fullfillment-buttons">
     <button class="swish" on:click={() => {
       createSale($cart, 'Swish');
@@ -138,9 +143,14 @@ $: console.log($cart);
       createSale($cart, 'Cash');
     }}>Cash</button>
     <button class="vipps" on:click={() => {
-      createSale($cart, 'Cash');
+      createSale($cart, 'Vipps');
     }}>Vipps</button>
   </div>
+  {:else}
+  <div class="checkout-waiting">
+    <Loader />
+  </div>
+  {/if}
 </div>
 {/if}
 
@@ -184,38 +194,9 @@ $: console.log($cart);
 {/if}
 </div>  
 
-<div class="sales">
-<h2>Salg</h2>
-{#if sales.length === 0}
-  <p>Laster inn salg...</p>
-{:else}
-<ul>
-  {#each sales as sale}
-    <li class="sale">
-      <div class="timestamp">
-        {new Date(sale.time).toLocaleString('nb-NO', {
-        month: 'short',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: 'numeric',
-      })}
-      </div>
-      <ul class="sold-items">
-        {#each sale.soldItems as soldItem}
-          <li>
-            {soldItem.product.name}
-          </li>
-        {/each}
-      </ul>
-      <div class="payment">
-        <div>{sale.paymentMethod}</div>
-        <div>{sale.sum} kr</div>
-      </div>
-    </li>
-  {/each}
-</ul>
+{#if sales.length}
+  <Sales {sales} />
 {/if}
-</div>
 
 <style>
 
@@ -260,27 +241,30 @@ $: console.log($cart);
     background: rgb(2, 74, 2);
     z-index: 2;
   }
+  .sales {
+    padding: 1.6rem 1.2rem;
+  }
+  .sales-info {
+    margin-bottom: 1.5rem;
+  }
   .sales ul {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 2rem;
   }
   .sales li.sale {
     display: flex;
     flex-direction: column;
-    gap: 0.8rem;
-    background: #333;
-    color: white;
-    padding: 1rem;
-    border-radius: 10px;
   }
   .sales .timestamp {
-    font-size: 0.8rem;
     font-weight: bold;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.2rem;
+    border-bottom: 1px solid #ccc;
   }
   .sales ul.sold-items {
     gap: 0.2rem;
-    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
   }
   .sales ul.sold-items li {
     list-style: disc;
@@ -290,6 +274,8 @@ $: console.log($cart);
     display: flex;
     justify-content: space-between;
     margin-top: auto;
+    border-top: 1px solid #ccc;
+    padding-top: 0.2rem;
   }
   .cart {
     position: fixed;
@@ -346,6 +332,12 @@ $: console.log($cart);
     background: #333;
     color: white;
     border-radius: 5px;
+  }
+  .checkout-waiting {
+    height: 5.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
   button.swish {
     grid-column: span 2;
