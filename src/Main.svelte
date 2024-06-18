@@ -156,7 +156,10 @@ $: console.log($cart);
 
 <div class="products">
 {#if products.Glass.length === 0}
-  <p>Laster inn produkter...</p>
+<div class="products-loading">
+  Laster produkter...
+  <Loader />
+</div>
 {:else}
   <div class="products-categories">
     {#each Object.keys(products) as category}
@@ -200,13 +203,19 @@ $: console.log($cart);
 
 <style>
 
+  .products-loading {
+    padding: 1.6rem 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
   .product-category {
     padding: 1.6rem 1.2rem;
     background: var(--background);
   }
   .products ul {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
     gap: 1rem;
   }
   .products li {
@@ -240,42 +249,6 @@ $: console.log($cart);
     border-radius: 3px;
     background: rgb(2, 74, 2);
     z-index: 2;
-  }
-  .sales {
-    padding: 1.6rem 1.2rem;
-  }
-  .sales-info {
-    margin-bottom: 1.5rem;
-  }
-  .sales ul {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 2rem;
-  }
-  .sales li.sale {
-    display: flex;
-    flex-direction: column;
-  }
-  .sales .timestamp {
-    font-weight: bold;
-    margin-bottom: 0.5rem;
-    padding-bottom: 0.2rem;
-    border-bottom: 1px solid #ccc;
-  }
-  .sales ul.sold-items {
-    gap: 0.2rem;
-    margin-bottom: 0.5rem;
-  }
-  .sales ul.sold-items li {
-    list-style: disc;
-    margin-left: 1rem;
-  }
-  .sales .payment {
-    display: flex;
-    justify-content: space-between;
-    margin-top: auto;
-    border-top: 1px solid #ccc;
-    padding-top: 0.2rem;
   }
   .cart {
     position: fixed;
@@ -347,5 +320,13 @@ $: console.log($cart);
   button.vipps {
     background: #ff5b24;
     color: white;
+  }
+
+  @media (max-width: 480px) {
+    .cart {
+      width: 100%;
+      left: 0;
+      right: 0;
+    }
   }
 </style>

@@ -48,3 +48,9 @@ h4 {
   --background: #afe2af;
   --shadow: green;
 }
+
+@media (max-width: 480px) {
+  html {
+    font-size: 14px;
+  }
+}

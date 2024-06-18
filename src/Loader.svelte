@@ -1,9 +1,9 @@
 <div class="loader"></div>
 <style>
 .loader {
-  width: 35px;
+  width: 2rem;
   aspect-ratio: 1;
-  --_g: no-repeat radial-gradient(farthest-side,#000 94%,#0000);
+  --_g: no-repeat radial-gradient(farthest-side,pink 94%,#0000);
   background:
     var(--_g) 0    0,
     var(--_g) 100% 0,
