@@ -1,6 +1,18 @@
   <script>
     import Loader from './Loader.svelte';
     export let sales = [];
+
+    const salesPerDay = sales.reduce((acc, curr) => {
+      const date = new Date(curr.time).toISOString().split('T')[0];
+      if (!acc[date]) {
+        acc[date] = 0;
+      }
+      acc[date] += curr.sum;
+      return acc;
+    }, {});
+
+    const max = Math.max(...Object.values(salesPerDay));
+
   </script>
 
 <div class="sales">
@@ -18,6 +30,11 @@
       Totalt: {sales.reduce((acc, curr) => {
         return acc + curr.sum;
       }, 0)} kr
+    </div>
+    <div class="chart">
+      {#each Object.entries(salesPerDay) as [date, sum]}
+        <div style="height: {sum / max * 100}%;"></div>
+      {/each}
     </div>
   </div>
   <ul>

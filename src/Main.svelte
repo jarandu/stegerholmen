@@ -22,6 +22,15 @@ const createSale = async (soldItems, paymentMethod, fullfilled = 'true') => {
   const sum =  $cart.reduce((acc, curr) => {
         return acc + curr.product.price * curr.quantity;
       }, 0);
+  let cartItems = [];
+  for (const item of soldItems) {
+    if (item.quantity > 1) {
+      Array.from({length: item.quantity}).forEach(() => {
+        cartItems.push(`{price: ${item.product.price}, product: {connect: {id: "${item.product.id}"}}}`)
+      });
+    }
+    else cartItems.push(`{price: ${item.product.price}, product: {connect: {id: "${item.product.id}"}}}`)
+  }
   const sale = await gql(`
     mutation CreateSale {
       createSale( 
@@ -32,7 +41,7 @@ const createSale = async (soldItems, paymentMethod, fullfilled = 'true') => {
           time: "${new Date().toISOString()}", 
           soldItems: {
             create: [
-              ${soldItems.map(item => `{price: ${item.product.price}, product: {connect: {id: "${item.product.id}"}}}`).join(' ')}
+              ${cartItems.join(' ')}
             ]
           }
         }
@@ -89,6 +98,29 @@ const getSales = async () => {
   sales = salesData.sales;
 }
 
+const addToCard = (product) => {
+  if (product.name == 'Godis') {
+    if ($cart.find(i => i.product.name == 'Godis')) return;
+    const price = prompt("Angi pris");
+    if (!price) return;
+    cart.update(items => {
+      items.push({ product: {...product, price}, quantity: 1 });
+      return items;
+    });
+  }
+  else {
+    cart.update(items => {
+      const item = items.find(i => i.product.id === product.id);
+      if (item) {
+        item.quantity++;
+      } else {
+        items.push({ product, quantity: 1 });
+      }
+      return items;
+    });
+  }
+}
+
 onMount(async () => {
   getProducts();
   getSales();
@@ -105,7 +137,7 @@ $: console.log($cart);
     {#each $cart as { product, quantity }, i}
       <li>
         <div class="name">
-          {product.name}
+          {product.name} ({product.price} kr)
         </div>
         <div class="quantity">
           {quantity}
@@ -173,17 +205,7 @@ $: console.log($cart);
                 <h4>{product.name}</h4>
                 {product.price} kr
               </div>
-              <button on:click={() => {
-                cart.update(items => {
-                  const item = items.find(i => i.product.id === product.id);
-                  if (item) {
-                    item.quantity++;
-                  } else {
-                    items.push({ product, quantity: 1 });
-                  }
-                  return items;
-                });
-              }}>
+              <button on:click={() => addToCard(product)}>
                 <svg viewBox="0 0 10 10" stroke="white" stroke-width="1" stroke-linecap="round">
                   <path d="M5 1 L5 9 M1 5 L9 5" />
                 </svg>
