@@ -46,7 +46,7 @@ const createSale = async (soldItems, paymentMethod, fullfilled = 'true') => {
               ${cartItems.join(' ')}
             ]
           }
-          text: ${cartText}
+          text: "${cartText}"
         }
       ) {
         id
