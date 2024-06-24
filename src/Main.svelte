@@ -4,7 +4,7 @@ import { onMount } from 'svelte';
 import { gql } from './utils';
 import { writable } from 'svelte/store';
 import Loader from './Loader.svelte';
-    import Sales from './Sales.svelte';
+import Sales from './Sales.svelte';
 
 let products = {
   'Dryck': [],
@@ -13,6 +13,8 @@ let products = {
   'Godis': [],
 };
 let sales = [];
+let cartText = '';
+let showCartText = false;
 let checkoutWaiting = false;
 
 const cart = writable([]);
@@ -44,6 +46,7 @@ const createSale = async (soldItems, paymentMethod, fullfilled = 'true') => {
               ${cartItems.join(' ')}
             ]
           }
+          text: ${cartText}
         }
       ) {
         id
@@ -90,6 +93,7 @@ const getSales = async () => {
           }
         }
         paymentMethod
+        text
         sum
         time
         id
@@ -166,6 +170,11 @@ $: console.log($cart);
     return acc + curr.product.price * curr.quantity;
   }, 0)} kr</div>
   </div>
+  {#if showCartText}
+  <textarea bind:value={cartText} placeholder="Kommentar"></textarea>
+  {:else}
+  <button class="add-text" on:click={() => showCartText = true}>Legg til kommentar</button>
+  {/if}
   {#if !checkoutWaiting}
   <div class="fullfillment-buttons">
     <button class="swish" on:click={() => {
@@ -276,7 +285,7 @@ $: console.log($cart);
     position: fixed;
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1.2rem;
     bottom: 0;
     right: 2rem;
     background: white;
@@ -314,6 +323,15 @@ $: console.log($cart);
     justify-content: space-between;
     font-weight: bold;
     font-size: 1.1rem;
+  }
+  .cart .add-text {
+    all: unset;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .cart textarea {
+    padding: 0.5rem;
+    resize: none;
   }
   .cart .fullfillment-buttons {
     display: grid;
