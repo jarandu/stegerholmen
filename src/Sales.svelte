@@ -76,6 +76,7 @@
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
       gap: 1.2rem;
+      font-size: 0.9rem;
     }
     .sales li.sale {
       display: flex;
@@ -86,11 +87,11 @@
     .sales .timestamp {
       font-weight: bold;
       margin-bottom: 0.5rem;
-      padding-bottom: 0.2rem;
+      padding-bottom: 0.3rem;
       border-bottom: 1px solid #ccc;
     }
     .sales ul.sold-items {
-      gap: 0.2rem;
+      gap: 0.15rem;
       margin-bottom: 0.5rem;
     }
     .sales ul.sold-items li {
@@ -102,6 +103,6 @@
       justify-content: space-between;
       margin-top: auto;
       border-top: 1px solid #ccc;
-      padding-top: 0.2rem;
+      padding-top: 0.3rem;
     }
   </style>
