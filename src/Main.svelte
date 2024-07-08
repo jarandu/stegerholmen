@@ -4,7 +4,6 @@ import { onMount } from 'svelte';
 import { gql } from './utils';
 import { writable } from 'svelte/store';
 import Loader from './Loader.svelte';
-import Sales from './Sales.svelte';
 
 let products = {
   'Dryck': [],
@@ -12,7 +11,6 @@ let products = {
   'Glass': [],
   'Godis': [],
 };
-let sales = [];
 let cartText = '';
 let showCartText = false;
 let checkoutWaiting = false;
@@ -54,7 +52,8 @@ const createSale = async (soldItems, paymentMethod, fullfilled = 'true') => {
     }`);
   if (sale) {
     cart.set([]);
-    getSales();
+    cartText = '';
+    showCartText = false;
     checkoutWaiting = false;
   }
 };
@@ -81,26 +80,6 @@ const getProducts = async () => {
   }, {});
   products = productsByCategory;
 }
-const getSales = async () => {
-  const salesData = await gql(`
-    query GetSales {
-      sales(orderBy: time_DESC, first: 100) {
-        soldItems {
-          price
-          product {
-            id
-            name
-          }
-        }
-        paymentMethod
-        text
-        sum
-        time
-        id
-      }
-    }`);
-  sales = salesData.sales;
-}
 
 const addToCard = (product) => {
   if (product.name == 'Godis') {
@@ -125,12 +104,27 @@ const addToCard = (product) => {
   }
 }
 
+const expand = (category) => {
+  return () => {
+    const all = document.querySelectorAll('.product-category');
+    all.forEach(el => {
+      if (el.classList.contains('expanded') && !el.classList.contains(category)) {
+        el.classList.remove('expanded');
+      }
+    });
+    const el = document.querySelector(`.product-category.${category}`);
+    el.classList.toggle('expanded'); 
+  }
+}
+
+const setHeight = (node) => {
+  const ul = node.querySelector('ul');
+  node.style.setProperty('--height', ul.scrollHeight + 57 + 'px');
+}
+
 onMount(async () => {
   getProducts();
-  getSales();
 });
-
-$: console.log($cart);
 
 </script>
 
@@ -197,15 +191,17 @@ $: console.log($cart);
 
 <div class="products">
 {#if products.Glass.length === 0}
-<div class="products-loading">
-  Laster produkter...
-  <Loader />
-</div>
+  <div class="loading">
+    Laster produkter...
+    <Loader />
+  </div>
 {:else}
   <div class="products-categories">
     {#each Object.keys(products) as category}
-      <div class="product-category {category}">
-        <h3>{category}</h3>
+      <div class="product-category {category}" use:setHeight>
+        <h3>
+          <button on:click={expand(category)}>{category}</button>
+        </h3>
         <ul>
           {#each products[category] as product}
             <li>
@@ -228,23 +224,36 @@ $: console.log($cart);
 {/if}
 </div>  
 
-{#if sales.length}
-  <Sales {sales} />
-{/if}
-
 <style>
-
-  .products-loading {
+  .loading {
     padding: 1.6rem 1.2rem;
     display: flex;
     flex-direction: column;
     gap: 1rem;
   }
   .product-category {
-    padding: 1.6rem 1.2rem;
+    background: var(--background);
+    height: 54px;
+    overflow: hidden;
+    transition: 0.2s ease-out;
+    margin: 1rem;
+    border-radius: 10px;
+  }
+  .product-category.expanded {
+    height: var(--height);
+  }
+  .product-category h3 {
+    margin: 0;
+    padding: 0.8rem 1.2rem 0.8rem;
     background: var(--background);
   }
+  .product-category h3 button {
+    all: unset;
+    cursor: pointer;
+    width: 100%;
+  }
   .products ul {
+    padding: 1.6rem 1.1rem 1.6rem 0.9rem;
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
     gap: 1rem;
@@ -256,7 +265,7 @@ $: console.log($cart);
     flex-direction: column;
     gap: 0.3rem;
     justify-content: flex-end;
-    box-shadow: 5px 5px 0 0 var(--shadow);
+    box-shadow: 0.3rem 0.3rem 0 0 var(--shadow);
     padding: 1rem;
     aspect-ratio: 1/1;
     border-radius: 10px;
@@ -271,7 +280,7 @@ $: console.log($cart);
   .product-info {
     z-index: 1;
   }
-  .products button {
+  .products li button {
     position: absolute;
     bottom: 1rem;
     right: 1rem;
@@ -363,6 +372,9 @@ $: console.log($cart);
   }
 
   @media (max-width: 480px) {
+    .product-category {
+      margin: 0.5rem;
+    }
     .cart {
       width: 100%;
       left: 0;

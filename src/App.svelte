@@ -1,18 +1,18 @@
 <script>
   import { Router, Link, Route } from "svelte-routing";
   import Main from "./Main.svelte";
-  import Setup from "./Setup.svelte";
+  import Compte from "./Compte.svelte";
 
 </script>
 
 <Router>
   <nav>
-    I dag er det {new Date().toLocaleString('nb-NO', { month: 'short', day: 'numeric', weekday: 'long'})}
-    <!-- <Link to="/">Home</Link> -->
+    <Link to="/">Kasse</Link>
+    <Link to="compte">Salg</Link>
   </nav>
   <div>
     <Route path="/"><Main /></Route>
-    <Route path="setup"><Setup /></Route>
+    <Route path="compte"><Compte /></Route>
   </div>
 </Router>
 
