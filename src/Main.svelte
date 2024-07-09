@@ -372,6 +372,9 @@ onMount(async () => {
   }
 
   @media (max-width: 480px) {
+    .products {
+      margin-bottom: 50vh;
+    }
     .product-category {
       margin: 0.5rem;
     }
