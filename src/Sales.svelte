@@ -38,6 +38,16 @@
 
     const max = Math.max(...Object.values(salesPerDay));
 
+    const salesPerProduct = sales.reduce((acc, curr) => {
+      for (const soldItem of curr.soldItems) {
+        if (!acc[soldItem.product.name]) acc[soldItem.product.name] = 0;
+        acc[soldItem.product.name] += 1;
+      }
+      return acc;
+    }, {});
+
+    const products = Object.entries(salesPerProduct).sort((a, b) => b[1] - a[1]);
+
   </script>
 
 <div class="sales">
@@ -45,68 +55,79 @@
   {#if sales.length === 0}
     <Loader />
   {:else}
-  <div class="sales-info">
-    <div class="cards">
-      <div class="card">
-        <div class="amount">
-          {days[days.length - 1].sum}<span class="unit">kr</span>
+    <div class="sales-info">
+      <div class="cards">
+        <div class="card">
+          <div class="amount">
+            {days[days.length - 1].sum}<span class="unit">kr</span>
+            </div>
+          I dag
+        </div>
+        <div class="card">
+          <div class="amount">
+            {Object.values(paymentMethods).reduce((acc, curr) => {
+              return acc + curr;
+            }, 0).toLocaleString('nb-NO')}<span class="unit">kr</span>
           </div>
-        I dag
-      </div>
-      <div class="card">
-        <div class="amount">
-          {Object.values(paymentMethods).reduce((acc, curr) => {
-            return acc + curr;
-          }, 0).toLocaleString('nb-NO')}<span class="unit">kr</span>
+          Totalt
         </div>
-        Totalt
+      </div>
+      <div class="chart">
+        {#each days as {date, sum}}
+          <div class="bar" style="height: {sum / max * 100}%;" title="{sum} kr">
+            <div class="label">{new Date(date).getDate()}</div>
+          </div>
+        {/each}
+        <div class="y-axis">
+          <div class="tick" style="bottom: {1000 / max * 100}%"></div>
+          <div class="tick" style="bottom: {2000 / max * 100}%"></div>
+          <div class="tick" style="bottom: {3000 / max * 100}%"></div>
+        </div>
       </div>
     </div>
-    <div class="chart">
-      {#each days as {date, sum}}
-        <div class="bar" style="height: {sum / max * 100}%;" title="{sum} kr">
-          <div class="label">{new Date(date).getDate()}</div>
-        </div>
+    <h3>Siste ti salg</h3>
+    <ul class="receipts">
+      {#each sales.slice(0,10) as sale}
+        <li class="sale">
+          <div class="timestamp">
+            {new Date(sale.time).toLocaleString('nb-NO', {
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: 'numeric',
+          })}
+          </div>
+          <ul class="sold-items">
+            {#each sale.soldItems as soldItem}
+              <li>
+                {soldItem.product.name}
+              </li>
+            {/each}
+          </ul>
+          <div class="payment">
+            <div>{sale.paymentMethod}</div>
+            <div>{sale.sum} kr</div>
+          </div>
+        </li>
       {/each}
-      <div class="y-axis">
-        <div class="tick" style="bottom: {1000 / max * 100}%"></div>
-        <div class="tick" style="bottom: {2000 / max * 100}%"></div>
-        <div class="tick" style="bottom: {3000 / max * 100}%"></div>
-      </div>
-    </div>
-  </div>
-  <h3>Siste ti salg</h3>
-  <ul>
-    {#each sales.slice(0,10) as sale}
-      <li class="sale">
-        <div class="timestamp">
-          {new Date(sale.time).toLocaleString('nb-NO', {
-          month: 'short',
-          day: 'numeric',
-          hour: 'numeric',
-          minute: 'numeric',
-        })}
-        </div>
-        <ul class="sold-items">
-          {#each sale.soldItems as soldItem}
-            <li>
-              {soldItem.product.name}
-            </li>
-          {/each}
-        </ul>
-        <div class="payment">
-          <div>{sale.paymentMethod}</div>
-          <div>{sale.sum} kr</div>
-        </div>
-      </li>
-    {/each}
-  </ul>
+    </ul>
+    <h3>Per produkt</h3>
+    <ul class="products">
+      {#each products as [product, amount], i}
+        <li>
+          {i + 1}. {product} ({amount})
+        </li>
+      {/each}
+    </ul>
   {/if}
-  </div>
+</div>
 
 <style>
   .sales {
     padding: 1.6rem 1.2rem;
+  }
+  h3 {
+    margin-top: 2rem;
   }
   .sales-info {
     margin-bottom: 1.5rem;
@@ -139,11 +160,12 @@
     height: 100px;
     width: 400px;
     max-width: 100%;
+    min-width: 50%;
     align-items: flex-end;
     display: flex;
     gap: 3px;
     margin-block: 2rem 3rem;
-    margin-right: 2rem;
+    margin-inline: auto;
   }
   .bar {
     position: relative;
@@ -169,37 +191,46 @@
     height: 0.5px;
     background: #ccc;
   }
-  .sales ul {
+  ul.receipts {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 1.2rem;
     font-size: 0.9rem;
   }
-  .sales li.sale {
+  .receipts li.sale {
     display: flex;
     flex-direction: column;
     padding: 1rem;
     box-shadow: 0 1px 10px 0 rgba(0, 0, 0, 0.15);
   }
-  .sales .timestamp {
+  .receipts .timestamp {
     font-weight: bold;
     margin-bottom: 0.5rem;
     padding-bottom: 0.3rem;
     border-bottom: 1px solid #ccc;
   }
-  .sales ul.sold-items {
+  .receipts ul.sold-items {
     gap: 0.15rem;
     margin-bottom: 0.5rem;
   }
-  .sales ul.sold-items li {
+  .receipts ul.sold-items li {
     list-style: disc;
     margin-left: 1rem;
   }
-  .sales .payment {
+  .receipts .payment {
     display: flex;
     justify-content: space-between;
     margin-top: auto;
     border-top: 1px solid #ccc;
     padding-top: 0.3rem;
+  }
+  ul.products {
+    column-count: 3;
+  }
+
+  @media (max-width: 600px) {
+    ul.products {
+      column-count: 2;
+    }
   }
 </style>
