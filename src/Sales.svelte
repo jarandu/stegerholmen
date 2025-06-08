@@ -21,7 +21,7 @@
       return acc;
     }, {});
 
-    const days = getDatesArray(new Date('2024-06-15'), new Date()).map((date) => {
+    const days = getDatesArray(new Date('2024-06-15'), new Date('2024-08-18')).map((date) => {
       return {
         date,
         sum: salesPerDay[date.toISOString().split('T')[0]] || 0,
@@ -35,6 +35,7 @@
       acc[curr.paymentMethod] += curr.sum;
       return acc;
     }, {});
+
 
     const max = Math.max(...Object.values(salesPerDay));
 
@@ -68,8 +69,12 @@
             {Object.values(paymentMethods).reduce((acc, curr) => {
               return acc + curr;
             }, 0).toLocaleString('nb-NO')}<span class="unit">kr</span>
+          </div>  
+          <div>
+            {#each Object.entries(paymentMethods) as [method, sum]}
+              <div>{method}: {sum.toLocaleString('nb-NO')} kr</div>
+            {/each}
           </div>
-          Totalt
         </div>
       </div>
       <div class="chart">

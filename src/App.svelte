@@ -8,7 +8,7 @@
 <Router>
   <nav>
     <Link to="/">Kasse</Link>
-    <Link to="compte">Salg</Link>
+    <!-- <Link to="compte">Salg</Link> -->
   </nav>
   <div>
     <Route path="/"><Main /></Route>
