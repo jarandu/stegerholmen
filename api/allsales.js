@@ -1,15 +1,8 @@
-import { GraphQLClient } from 'graphql-request';
+import { hygraphClient } from '../src/utils.js';
 
 export default async function handler(request, response) {
 
-  const hygraph = new GraphQLClient(
-    'https://api-eu-central-1-shared-euc1-02.hygraph.com/v2/clxf60hv1019o07w8rgr6i90e/master',
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.HYGRAPH}`,
-      },
-    }
-  );
+  const hygraph = hygraphClient(process);
 
   let allItems = [];
   let skip = 0;
