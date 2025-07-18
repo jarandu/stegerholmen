@@ -21,7 +21,7 @@
       return acc;
     }, {});
 
-    const days = getDatesArray(new Date('2024-06-15'), new Date('2024-08-18')).map((date) => {
+    const days = getDatesArray(new Date('2025-07-15'), new Date('2025-08-15')).map((date) => {
       return {
         date,
         sum: salesPerDay[date.toISOString().split('T')[0]] || 0,
@@ -49,6 +49,8 @@
 
     const products = Object.entries(salesPerProduct).sort((a, b) => b[1] - a[1]);
 
+    $: today = days.find(day => day.date.toISOString().split('T')[0] === new Date().toISOString().split('T')[0]);
+
   </script>
 
 <div class="sales">
@@ -60,7 +62,7 @@
       <div class="cards">
         <div class="card">
           <div class="amount">
-            {days[days.length - 1].sum}<span class="unit">kr</span>
+            {today.sum}<span class="unit">kr</span>
             </div>
           I dag
         </div>

@@ -5,17 +5,15 @@ import { gql } from './utils';
 import { writable } from 'svelte/store';
 import Loader from './Loader.svelte';
 
-let products = {
-  'Dryck': [],
-  'Mat': [],
-  'Glass': [],
-  'Godis': [],
-};
+let products = [];
+let category = null;
 let cartText = '';
 let showCartText = false;
 let checkoutWaiting = false;
 
 const cart = writable([]);
+
+$: filteredProducts = category ? products.filter(product => product.category === category) : products;
 
 const createSale = async (soldItems, paymentMethod, fullfilled = 'true') => {
   checkoutWaiting = true;
@@ -69,16 +67,17 @@ const getProducts = async () => {
         category
       }
     }`);
-  const productsByCategory = productsData.products.reduce((acc, curr) => {
-    let cat = curr.category;
-    if (cat == 'Godis') cat = 'Mat';
-    if (!acc[cat]) {
-      acc[cat] = [];
-    }
-    acc[cat].push(curr);
-    return acc;
-  }, {});
-  products = productsByCategory;
+  // const productsByCategory = productsData.products.reduce((acc, curr) => {
+  //   let cat = curr.category;
+  //   if (cat == 'Godis') cat = 'Mat';
+  //   if (!acc[cat]) {
+  //     acc[cat] = [];
+  //   }
+  //   acc[cat].push(curr);
+  //   return acc;
+  // }, {});
+  products = productsData.products;
+  filteredProducts = products;
 }
 
 const addToCard = (product) => {
@@ -104,22 +103,26 @@ const addToCard = (product) => {
   }
 }
 
-const expand = (category) => {
-  return () => {
-    const all = document.querySelectorAll('.product-category');
-    all.forEach(el => {
-      if (el.classList.contains('expanded') && !el.classList.contains(category)) {
-        el.classList.remove('expanded');
-      }
-    });
-    const el = document.querySelector(`.product-category.${category}`);
-    el.classList.toggle('expanded'); 
-  }
-}
+// const expand = (category) => {
+//   return () => {
+//     const all = document.querySelectorAll('.product-category');
+//     all.forEach(el => {
+//       if (el.classList.contains('expanded') && !el.classList.contains(category)) {
+//         el.classList.remove('expanded');
+//       }
+//     });
+//     const el = document.querySelector(`.product-category.${category}`);
+//     el.classList.toggle('expanded'); 
+//   }
+// }
 
-const setHeight = (node) => {
-  const ul = node.querySelector('ul');
-  node.style.setProperty('--height', ul.scrollHeight + 57 + 'px');
+// const setHeight = (node) => {
+//   const ul = node.querySelector('ul');
+//   node.style.setProperty('--height', ul.scrollHeight + 57 + 'px');
+// }
+
+const filter = (cat) => {
+  category = cat;
 }
 
 onMount(async () => {
@@ -190,73 +193,93 @@ onMount(async () => {
 {/if}
 
 <div class="products">
-{#if products.Glass.length === 0}
+{#if products.length === 0}
   <div class="loading">
     Laster produkter...
     <Loader />
   </div>
 {:else}
-  <div class="products-categories">
-    {#each Object.keys(products) as category}
-      <div class="product-category {category}" use:setHeight>
-        <h3>
-          <button on:click={expand(category)}>{category}</button>
-        </h3>
-        <ul>
-          {#each products[category] as product}
-            <li>
-              <img src="./images/{product.slug}.jpg" alt="" />
-              <div class="product-info">
-                <h4>{product.name}</h4>
-                {product.price} kr
-              </div>
-              <button on:click={() => addToCard(product)}>
-                <svg viewBox="0 0 10 10" stroke="white" stroke-width="1" stroke-linecap="round">
-                  <path d="M5 1 L5 9 M1 5 L9 5" />
-                </svg>
-              </button>
-            </li>
-          {/each}
-        </ul>
-      </div>
-    {/each}
-  </div>
+<div class="products-categories">
+  <button class="reset" on:click={() => filter(null)}>Alla</button>
+  {#each ['Dryck', 'Mat', 'Glass'] as cat}
+    <button class:active={category === cat} class={cat.toLowerCase()} on:click={() => filter(cat)}>{cat}</button>
+  {/each}
+</div>
+    <ul>
+      {#each filteredProducts as product}
+        <li class="product {product.category.toLowerCase()}">
+          <img src="./images/{product.slug}.jpg" alt="" />
+          <div class="product-info">
+            <h4>{product.name}</h4>
+            {product.price} kr
+          </div>
+          <button on:click={() => addToCard(product)}>
+            <svg viewBox="-1 -1 12 12" stroke="white" stroke-width="1" stroke-linecap="round">
+              <path d="M5 1 L5 9 M1 5 L9 5" />
+            </svg>
+          </button>
+        </li>
+      {/each}
+    </ul>
 {/if}
 </div>  
 
 <style>
+  .products {
+    margin-top: 1rem;
+  }
+  .dryck {
+    --color: #e9a700;
+  }
+  .mat,
+  .godis {
+    --color: #950454;
+  }
+  .glass {
+    --color: #006671;
+  }
+  .reset {
+    --color: #333;
+  }
   .loading {
     padding: 1.6rem 1.2rem;
     display: flex;
     flex-direction: column;
     gap: 1rem;
   }
-  .product-category {
-    background: var(--background);
-    height: 54px;
-    overflow: hidden;
-    transition: 0.2s ease-out;
-    margin: 1rem;
-    border-radius: 10px;
+  .products-categories {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: white;
   }
-  .product-category.expanded {
-    height: var(--height);
-  }
-  .product-category h3 {
-    margin: 0;
-    padding: 0.8rem 1.2rem 0.8rem;
-    background: var(--background);
-  }
-  .product-category h3 button {
+  .products-categories button {
     all: unset;
+    padding: 0.5rem 1rem;
+    border-radius: 99px;
+    background: white;
+    color: var(--color);
+    border: 1px solid var(--color);
     cursor: pointer;
-    width: 100%;
+  }
+  .products-categories button:hover,
+  .products-categories button.active {
+    background: var(--color);
+    color: white;
+  }
+  .products-categories button:hover {
+    filter: brightness(1.1);
   }
   .products ul {
-    padding: 1.6rem 1.1rem 1.6rem 0.9rem;
+    padding: 1rem;
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
     gap: 1rem;
+    margin-bottom: 50vh;
   }
   .products li {
     position: relative;
@@ -265,17 +288,21 @@ onMount(async () => {
     flex-direction: column;
     gap: 0.3rem;
     justify-content: flex-end;
-    box-shadow: 0.3rem 0.3rem 0 0 var(--shadow);
+    box-shadow: 0 0 0.85rem 0 rgba(0, 0, 0, 0.15);
     padding: 1rem;
-    aspect-ratio: 1/1;
-    border-radius: 10px;
+    aspect-ratio: 1/1.3;
+    border-radius: 1rem;
     overflow: hidden;
   }
   .products img {
     position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
     width: calc(100% - 2rem);
     height: calc(100% - 2rem);
-    object-fit: cover;
+    object-position: center;
+    object-fit: contain;
   }
   .product-info {
     z-index: 1;
@@ -284,10 +311,10 @@ onMount(async () => {
     position: absolute;
     bottom: 1rem;
     right: 1rem;
-    width: 1.2rem;
-    height: 1.2rem;
-    border-radius: 3px;
-    background: rgb(2, 74, 2);
+    width: 1.35rem;
+    height: 1.35rem;
+    border-radius: 99px;
+    background: var(--color);
     z-index: 2;
   }
   .cart {
@@ -324,7 +351,7 @@ onMount(async () => {
   .cart .remove {
     width: 1rem;
     height: 1rem;
-    border-radius: 3px;
+    border-radius: 99px;
     background: rgb(159, 44, 5);
   }
   .cart .sum {
@@ -353,7 +380,7 @@ onMount(async () => {
     border: none;
     background: #333;
     color: white;
-    border-radius: 5px;
+    border-radius: 0.75rem;
   }
   .checkout-waiting {
     height: 5.5rem;
@@ -372,12 +399,6 @@ onMount(async () => {
   }
 
   @media (max-width: 480px) {
-    .products {
-      margin-bottom: 50vh;
-    }
-    .product-category {
-      margin: 0.5rem;
-    }
     .cart {
       width: 100%;
       left: 0;
