@@ -290,22 +290,23 @@ onMount(async () => {
     justify-content: flex-end;
     box-shadow: 0 0 0.85rem 0 rgba(0, 0, 0, 0.15);
     padding: 1rem;
-    aspect-ratio: 1/1.3;
+    aspect-ratio: 1/1.15;
     border-radius: 1rem;
     overflow: hidden;
   }
   .products img {
     position: absolute;
-    top: 0;
+    top: 0.5rem;
     left: 50%;
+    aspect-ratio: 1/1;
     transform: translateX(-50%);
     width: calc(100% - 2rem);
-    height: calc(100% - 2rem);
     object-position: center;
     object-fit: contain;
   }
   .product-info {
     z-index: 1;
+    margin-top: 0.5rem;
   }
   .products li button {
     position: absolute;
