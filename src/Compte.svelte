@@ -1,13 +1,17 @@
 <script>
-
 import Sales from './Sales.svelte';
 import Loader from './Loader.svelte';
+import { fetchSales } from './utils';
 
 let sales = [];
 
 const getSales = async () => {
-  const salesData = await fetch('./api/allsales').then(res => res.json());
-  sales = salesData;
+  try {
+    const salesData = await fetchSales();
+    sales = salesData;
+  } catch (error) {
+    console.error('Error fetching sales:', error);
+  }
 }
 
 getSales();

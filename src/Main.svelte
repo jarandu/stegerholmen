@@ -1,7 +1,7 @@
 <script>
 
 import { onMount } from 'svelte';
-import { gql } from './utils';
+import { fetchProducts, createSale } from './utils';
 import { writable } from 'svelte/store';
 import Loader from './Loader.svelte';
 
@@ -15,69 +15,40 @@ const cart = writable([]);
 
 $: filteredProducts = category ? products.filter(product => product.category === category) : products;
 
-const createSale = async (soldItems, paymentMethod, fullfilled = 'true') => {
+const createSaleHandler = async (soldItems, paymentMethod, fullfilled = 'true') => {
   checkoutWaiting = true;
-  const sum =  $cart.reduce((acc, curr) => {
-        return acc + curr.product.price * curr.quantity;
-      }, 0);
-  let cartItems = [];
-  for (const item of soldItems) {
-    if (item.quantity > 1) {
-      Array.from({length: item.quantity}).forEach(() => {
-        cartItems.push(`{price: ${item.product.price}, product: {connect: {id: "${item.product.id}"}}}`)
-      });
+  const sum = $cart.reduce((acc, curr) => {
+    return acc + curr.product.price * curr.quantity;
+  }, 0);
+  
+  try {
+    const sale = await createSale({
+      sum: sum,
+      paymentMethod: paymentMethod,
+      soldItems: soldItems,
+      text: cartText
+    });
+    
+    if (sale) {
+      cart.set([]);
+      cartText = '';
+      showCartText = false;
+      checkoutWaiting = false;
     }
-    else cartItems.push(`{price: ${item.product.price}, product: {connect: {id: "${item.product.id}"}}}`)
-  }
-  const sale = await gql(`
-    mutation CreateSale {
-      createSale( 
-        data: {
-          fullfilled: ${fullfilled}, 
-          paymentMethod: ${paymentMethod}, 
-          sum: ${sum}, 
-          time: "${new Date().toISOString()}", 
-          soldItems: {
-            create: [
-              ${cartItems.join(' ')}
-            ]
-          }
-          text: "${cartText}"
-        }
-      ) {
-        id
-      }
-    }`);
-  if (sale) {
-    cart.set([]);
-    cartText = '';
-    showCartText = false;
+  } catch (error) {
+    console.error('Error creating sale:', error);
     checkoutWaiting = false;
   }
 };
 
 const getProducts = async () => {
-  const productsData = await gql(`
-    query GetProducts {
-      products(orderBy: name_ASC, first: 100) {
-        id
-        name
-        price
-        slug
-        category
-      }
-    }`);
-  // const productsByCategory = productsData.products.reduce((acc, curr) => {
-  //   let cat = curr.category;
-  //   if (cat == 'Godis') cat = 'Mat';
-  //   if (!acc[cat]) {
-  //     acc[cat] = [];
-  //   }
-  //   acc[cat].push(curr);
-  //   return acc;
-  // }, {});
-  products = productsData.products;
-  filteredProducts = products;
+  try {
+    const productsData = await fetchProducts();
+    products = productsData;
+    filteredProducts = products;
+  } catch (error) {
+    console.error('Error fetching products:', error);
+  }
 }
 
 const addToCard = (product) => {
@@ -175,13 +146,13 @@ onMount(async () => {
   {#if !checkoutWaiting}
   <div class="fullfillment-buttons">
     <button class="swish" on:click={() => {
-      createSale($cart, 'Swish');
+      createSaleHandler($cart, 'Swish');
     }}>Swish</button>
     <button class="cash" on:click={() => {
-      createSale($cart, 'Cash');
+      createSaleHandler($cart, 'Cash');
     }}>Cash</button>
     <button class="vipps" on:click={() => {
-      createSale($cart, 'Vipps');
+      createSaleHandler($cart, 'Vipps');
     }}>Vipps</button>
   </div>
   {:else}
