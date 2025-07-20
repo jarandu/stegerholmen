@@ -16,13 +16,13 @@ export default async function handler(request, response) {
           price
           product {
             name
+            category
           }
         }
         paymentMethod
         text
         sum
         time
-        id
       }
     }
   `;

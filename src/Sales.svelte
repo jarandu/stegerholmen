@@ -36,6 +36,16 @@
       return acc;
     }, {});
 
+    const getProductsPerCategory = (sales) => {
+      console.log(sales);
+      return sales.reduce((acc, curr) => {
+        for (const soldItem of curr.soldItems) {
+          if (!acc[soldItem.product.category]) acc[soldItem.product.category] = 0;
+          acc[soldItem.product.category] += 1;
+        }
+        return acc;
+      }, {});
+    }
 
     const max = Math.max(...Object.values(salesPerDay));
 
@@ -49,23 +59,40 @@
 
     const products = Object.entries(salesPerProduct).sort((a, b) => b[1] - a[1]);
 
-    $: today = days.find(day => day.date.toISOString().split('T')[0] === new Date().toISOString().split('T')[0]);
+    const today = sales.filter(sale => new Date(sale.time).toISOString().split('T')[0] === new Date().toISOString().split('T')[0]);
+    const todayAmount = days.find(day => day.date.toISOString().split('T')[0] === new Date().toISOString().split('T')[0]);
 
   </script>
 
 <div class="sales">
-  <h2>Salg</h2>
   {#if sales.length === 0}
     <Loader />
   {:else}
+    <h2>I dag</h2>
     <div class="sales-info">
       <div class="cards">
         <div class="card">
           <div class="amount">
-            {today.sum}<span class="unit">kr</span>
-            </div>
-          I dag
+            {todayAmount.sum.toLocaleString('nb-NO')}<span class="unit">kr</span>
+          </div>
+          Omsetning
         </div>
+        <div class="card">
+          <div class="amount">
+            {today.length}
+          </div>
+          Antal salg
+        </div>
+        <div class="card">
+          {#each Object.entries(getProductsPerCategory(today)) as [category, amount]}
+            <div><strong>{category}</strong>: {amount}</div>
+          {/each}
+        </div>
+      </div>
+    </div>
+    <h2>Totalt</h2>
+    <div class="sales-info">
+      <div class="cards">
         <div class="card">
           <div class="amount">
             {Object.values(paymentMethods).reduce((acc, curr) => {
@@ -78,18 +105,30 @@
             {/each}
           </div>
         </div>
-      </div>
-      <div class="chart">
-        {#each days as {date, sum}}
-          <div class="bar" style="height: {sum / max * 100}%;" title="{sum} kr">
-            <div class="label">{new Date(date).getDate()}</div>
-          </div>
-        {/each}
-        <div class="y-axis">
-          <div class="tick" style="bottom: {1000 / max * 100}%"></div>
-          <div class="tick" style="bottom: {2000 / max * 100}%"></div>
-          <div class="tick" style="bottom: {3000 / max * 100}%"></div>
+        <div class="card">
+          <div class="amount">
+            {sales.length}
+          </div>  
+          Antal salg
         </div>
+        <div class="card">
+          {#each Object.entries(getProductsPerCategory(sales)) as [category, amount]}
+            <div><strong>{category}</strong>: {amount}</div>
+          {/each}
+        </div>
+      </div>
+    </div>
+    <h2>Salg per dag</h2>
+    <div class="chart">
+      {#each days as {date, sum}}
+        <div class="bar" style="height: {sum / max * 100}%;" title="{sum} kr">
+          <div class="label">{new Date(date).getDate()}</div>
+        </div>
+      {/each}
+      <div class="y-axis">
+        {#each Array.from({length: Math.floor(max / 1000)}, (_, i) => i + 1) as i}
+          <div class="tick" style="bottom: {i * 1000 / max * 100}%"></div>
+        {/each}
       </div>
     </div>
     <h3>Siste ti salg</h3>
