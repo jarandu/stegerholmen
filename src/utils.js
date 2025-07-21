@@ -36,7 +36,7 @@ export const fetchSales = async (params = {}) => {
 };
 
 export const createSale = async (saleData) => {
-  const response = await fetch('/api/sales', {
+  const response = await fetch('/api/registersale', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

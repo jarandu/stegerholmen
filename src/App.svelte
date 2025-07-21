@@ -1,18 +1,18 @@
 <script>
   import { Router, Link, Route } from "svelte-routing";
   import Main from "./Main.svelte";
-  import Compte from "./Compte.svelte";
+  import Sales from "./Sales.svelte";
 
 </script>
 
 <Router>
   <nav>
     <Link to="/">Kasse</Link>
-    <Link to="compte">Salg</Link>
+    <Link to="sales">Salg</Link>
   </nav>
   <div>
     <Route path="/"><Main /></Route>
-    <Route path="compte"><Compte /></Route>
+    <Route path="sales"><Sales /></Route>
   </div>
 </Router>
 
