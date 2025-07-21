@@ -27,14 +27,14 @@ export default async function handler(req, res) {
       query = query.or(`name.ilike.%${search}%`);
     }
     
-    const { data: products, error } = await query;
+    const { data, error } = await query;
     
     if (error) {
       console.error('Supabase error:', error);
       return res.status(500).json({ error: 'Database error' });
     }
     
-    res.status(200).json({ products });
+    res.status(200).json(data);
   } catch (error) {
     console.error('API error:', error);
     res.status(500).json({ error: 'Internal server error' });

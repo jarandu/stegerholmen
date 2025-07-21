@@ -1,38 +1,21 @@
 
 // API-based data fetching functions
-export const fetchProducts = async (params = {}) => {
-  const queryParams = new URLSearchParams(params);
-  const response = await fetch(`/api/products?${queryParams}`);
-  
-  if (!response.ok) {
-    throw new Error('Failed to fetch products');
-  }
-  
-  const data = await response.json();
-  return data.products;
+export const fetchSales = async () => {
+  const response = await fetch('/api/sales');
+  if (!response.ok) throw new Error('Failed to fetch sales');
+  return (await response.json());
 };
 
-export const fetchProduct = async (slug) => {
-  const response = await fetch(`/api/product?slug=${encodeURIComponent(slug)}`);
-  
-  if (!response.ok) {
-    throw new Error('Failed to fetch product');
-  }
-  
-  const data = await response.json();
-  return data.product;
+export const fetchProducts = async () => {
+  const response = await fetch('/api/products');
+  if (!response.ok) throw new Error('Failed to fetch products');
+  return (await response.json());
 };
 
-export const fetchSales = async (params = {}) => {
-  const queryParams = new URLSearchParams(params);
-  const response = await fetch(`/api/sales?${queryParams}`);
-  
-  if (!response.ok) {
-    throw new Error('Failed to fetch sales');
-  }
-  
-  const data = await response.json();
-  return data.sales;
+export const fetchSoldItems = async () => {
+  const response = await fetch('/api/sold_items');
+  if (!response.ok) throw new Error('Failed to fetch sold items');
+  return (await response.json());
 };
 
 export const createSale = async (saleData) => {
