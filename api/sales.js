@@ -146,11 +146,13 @@ export default async function handler(req, res) {
       }
       
       // Insert sold items
-      const soldItemsData = soldItems.map(item => ({
-        sale_id: sale.id,
-        product_id: item.product.id,
-        price: parseFloat(item.product.price)
-      }));
+      const soldItemsData = soldItems.flatMap(item =>
+        Array.from({ length: item.quantity }).map(() => ({
+          sale_id: sale.id,
+          product_id: item.product.id,
+          price: parseFloat(item.product.price)
+        }))
+      );
       
       const { error: itemsError } = await supabase
         .from('sold_items')
