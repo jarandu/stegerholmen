@@ -1,7 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import Loader from './Loader.svelte';
-  import { fetchSales, fetchProducts, fetchSoldItems } from './utils';
+  import { fetchSales, getProducts, fetchSoldItems } from './utils';
 
   let sales = [];
   let products = [];
@@ -61,9 +61,7 @@
     });
   }
 
-  $: fiveLastReceipts = getLastReceipts(today, soldItems, 5);
-
-  $: console.log('fiveLastReceipts', fiveLastReceipts);
+  $: lastReceipts = getLastReceipts(today, soldItems, 6);
 
   const getPaymentMethods = (sales) => { 
     return sales.reduce((acc, curr) => {
@@ -100,13 +98,10 @@
   onMount(async () => {
     [sales, products, soldItems] = await Promise.all([
       fetchSales(),
-      fetchProducts(),
+      getProducts(), // Call the new getProducts function
       fetchSoldItems()
     ]);
   });
-
-  $: console.log('days', days);
-  $: console.log('max', max);
 
 </script>
 
@@ -186,7 +181,7 @@
       {/if}
       <h3>Siste fem salg</h3>
       <ul class="receipts">
-        {#each fiveLastReceipts as sale}
+        {#each lastReceipts as sale}
           <li class="receipt">
             <div class="timestamp">
               {new Date(sale.time).toLocaleString('nb-NO', {
@@ -335,5 +330,15 @@
   }
   .products li {
     padding: 0.25rem 0;
+  }
+
+  @media (max-width: 480px) {
+    .receipts {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+    .receipt {
+      width: unset;
+    }
   }
 </style>

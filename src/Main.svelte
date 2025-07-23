@@ -1,7 +1,7 @@
 <script>
 
 import { onMount } from 'svelte';
-import { fetchProducts, createSale } from './utils';
+import { getProducts, createSale } from './utils';
 import { writable } from 'svelte/store';
 import Loader from './Loader.svelte';
 
@@ -41,9 +41,9 @@ const createSaleHandler = async (soldItems, paymentMethod, fullfilled = 'true') 
   }
 };
 
-const getProducts = async () => {
+const run = async () => {
   try {
-    const productsData = await fetchProducts();
+    const productsData = await getProducts();
     products = productsData;
     filteredProducts = products;
   } catch (error) {
@@ -97,7 +97,7 @@ const filter = (cat) => {
 }
 
 onMount(async () => {
-  getProducts();
+  run();
 });
 
 </script>

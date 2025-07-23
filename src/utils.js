@@ -12,6 +12,26 @@ export const fetchProducts = async () => {
   return (await response.json());
 };
 
+export const getProducts = async () => {
+  try {
+    const cached = localStorage.getItem('products');
+    const cachedTime = localStorage.getItem('products_cached_at');
+    const now = Date.now();
+
+    if (cached && cachedTime && now - parseInt(cachedTime) < 1000 * 60 * 60) {
+      console.log('Using cached products');
+      return JSON.parse(cached);
+    } else {
+      const productsData = await fetchProducts();
+      localStorage.setItem('products', JSON.stringify(productsData));
+      localStorage.setItem('products_cached_at', now.toString());
+      return productsData; 
+    }
+  } catch (error) {
+    console.error('Error fetching products:', error);
+  }
+}
+
 export const fetchSoldItems = async () => {
   const response = await fetch('/api/sold_items');
   if (!response.ok) throw new Error('Failed to fetch sold items');

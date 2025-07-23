@@ -12,7 +12,9 @@ export default async function handler(req, res) {
   try {
     const { data, error } = await supabase
       .from('sold_items')
-      .select('sale_id, product_id, price');
+      .select('sale_id, product_id, price')
+      .order('created_at', { ascending: false })
+      .limit(50);
     if (error) {
       console.error('Supabase error:', error);
       return res.status(500).json({ error: 'Database error', details: error.message });
