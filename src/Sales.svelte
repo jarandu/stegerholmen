@@ -68,6 +68,14 @@
 
   $: todaysSoldItems = todaysSales.flatMap(sale => sale.soldItems);
 
+  $: todaysProducts = todaysSoldItems.reduce((acc, curr) => {
+    if (!acc[curr.name]) {
+      acc[curr.name] = 0;
+    }
+    acc[curr.name] += 1;
+    return acc;
+  }, {});
+
   const categoriesColors = {
     'Dryck': '#e9a700',
     'Glass': '#006671',
@@ -235,14 +243,14 @@
           </li>
         {/each}
       </ul>
-      <!-- <h3>Per produkt</h3>
+      <h2>Dagens vinnerprodukter</h2>
       <ul class="products">
-        {#each products as [product, amount], i}
+        {#each Object.entries(todaysProducts).sort((a, b) => b[1] - a[1]).slice(0, 10) as [product, amount], i}
           <li>
             {i + 1}. {product} ({amount})
           </li>
         {/each}
-      </ul> -->
+      </ul>
   </div>
 {/if}
 
