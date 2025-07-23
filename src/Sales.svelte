@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import Loader from './Loader.svelte';
   import { fetchSales, getProducts, fetchSoldItems } from './utils';
+  import PieChart from './PieChart.svelte';
 
   let sales = [];
   let products = [];
@@ -45,23 +46,68 @@
     return acc + curr.sum;
   }, 0);
 
-  const getLastReceipts = (sales, soldItems, count) => {
+  const getSalesWithItems = (sales, soldItems, count = Infinity) => {
     // @ts-ignore
     const x = sales.sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, count);
     return x.map(sale => {
       return {
         ...sale,
         soldItems: soldItems.filter(item => item.sale_id === sale.id).map(item => {
+          const product = products.find(product => product.id === item.product_id);
           return {
             ...item,
-            name: products.find(product => product.id === item.product_id).name,
+            name: product.name,
+            category: product.category,
           }
         })
       }
     });
   }
 
-  $: lastReceipts = getLastReceipts(today, soldItems, 6);
+  $: todaysSales = getSalesWithItems(today, soldItems);
+
+  $: todaysSoldItems = todaysSales.flatMap(sale => sale.soldItems);
+
+  const categoriesColors = {
+    'Dryck': '#e9a700',
+    'Glass': '#006671',
+    'Mat': '#950454',
+    'Godis': 'rgb(209 71 71)',
+  }
+
+  const getSummary = (soldItems) => {
+    const categoriesWithProfitMargin = {
+      'Dryck': 0.67,
+      'Glass': 0.3,
+      'Mat': 0.5,
+      'Godis': 0.25
+    }
+    return soldItems.reduce((acc, curr) => {
+      if (!acc[curr.category]) {
+        acc[curr.category] = {
+          sum: 0,
+          count: 0,
+        };
+      }
+      acc[curr.category].sum += curr.price * categoriesWithProfitMargin[curr.category];
+      acc[curr.category].count += 1;
+      return acc;
+    }, {});
+  }
+
+  $: todaysSummary = getSummary(todaysSoldItems);
+  $: todaysTotalProfit = Object.values(todaysSummary).reduce((acc, curr) => {
+    return acc + curr.sum;
+  }, 0);
+
+  $: pieData = todaysSummary ? Object.entries(categoriesColors).map(([category, color]) => {
+    if (!todaysSummary[category]) return null;
+    return {
+      label: category,
+      value: todaysSummary[category].sum,
+      color,
+    }
+  }).filter(Boolean) : [];
 
   const getPaymentMethods = (sales) => { 
     return sales.reduce((acc, curr) => {
@@ -72,28 +118,6 @@
       return acc;
     }, {});
   };
-
-  const getProductsPerCategory = (sales) => {
-    console.log(sales);
-    return sales.reduce((acc, curr) => {
-      for (const soldItem of curr.sold_items) {
-        if (!acc[soldItem.product.category]) acc[soldItem.product.category] = 0;
-        acc[soldItem.product.category] += 1;
-      }
-      return acc;
-    }, {});
-  }
-
-  // const salesPerProduct = sales.reduce((acc, curr) => {
-  //   for (const soldItem of curr.sold_items) {
-  //     if (!acc[soldItem.product.name]) acc[soldItem.product.name] = 0;
-  //     acc[soldItem.product.name] += 1;
-  //   }
-  //   return acc;
-  // }, {});
-
-  // const products = Object.entries(salesPerProduct).sort((a, b) => b[1] - a[1]);
-
 
   onMount(async () => {
     [sales, products, soldItems] = await Promise.all([
@@ -126,11 +150,17 @@
             </div>
             Antal salg
           </div>
-          <!-- <div class="card">
-            {#each Object.entries(getProductsPerCategory(today)) as [category, amount]}
-              <div><strong>{category}</strong>: {amount}</div>
-            {/each}
-          </div> -->
+          <div class="card">
+            <div class="amount">
+              {todaysTotalProfit.toLocaleString('nb-NO', {
+                maximumFractionDigits: 0,
+              })}<span class="unit">kr</span>
+            </div>
+            Estimert fortjeneste
+          </div>
+          <div class="card">
+            <PieChart data={pieData} />
+          </div>
         </div>
       </div>
       <h2>Totalt</h2>
@@ -179,9 +209,9 @@
           </div>
         </div>
       {/if}
-      <h3>Siste fem salg</h3>
+      <h2>Siste ti salg</h2>
       <ul class="receipts">
-        {#each lastReceipts as sale}
+        {#each todaysSales.slice(0, 10) as sale}
           <li class="receipt">
             <div class="timestamp">
               {new Date(sale.time).toLocaleString('nb-NO', {
@@ -224,9 +254,9 @@
     height: 100vh;
   }
   .sales {
-    padding: 1.6rem 1.2rem;
+    padding: 0 1.2rem 1.6rem;
   }
-  h3 {
+  h2 {
     margin-top: 2rem;
   }
   .sales-info {
@@ -238,8 +268,8 @@
   }
   .card {
     padding: 1rem;
-    box-shadow: 0 1px 10px 0 rgba(0, 0, 0, 0.15);
-    border-radius: 3px;
+    box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
+    border-radius: 0.5rem;
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -259,7 +289,7 @@
   .chart {
     position: relative;
     height: 200px;
-    margin-bottom: 2rem;
+    margin-bottom: 3rem;
   }
   .bars {
     padding-left: 2rem;
@@ -333,7 +363,7 @@
   }
 
   @media (max-width: 480px) {
-    .receipts {
+    .receipts, .cards {
       display: grid;
       grid-template-columns: 1fr 1fr;
     }

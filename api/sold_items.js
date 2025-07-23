@@ -10,11 +10,23 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
   try {
+    const now = new Date();
+    const yyyy = now.getUTCFullYear();
+    const mm = String(now.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(now.getUTCDate()).padStart(2, '0');
+    const todayStart = `${yyyy}-${mm}-${dd}T00:00:00.000Z`;
+    
+    const tomorrow = new Date(Date.UTC(yyyy, now.getUTCMonth(), now.getUTCDate() + 1));
+    const yyyy2 = tomorrow.getUTCFullYear();
+    const mm2 = String(tomorrow.getUTCMonth() + 1).padStart(2, '0');
+    const dd2 = String(tomorrow.getUTCDate()).padStart(2, '0');
+    const tomorrowStart = `${yyyy2}-${mm2}-${dd2}T00:00:00.000Z`;
+    
     const { data, error } = await supabase
       .from('sold_items')
-      .select('sale_id, product_id, price')
-      .order('created_at', { ascending: false })
-      .limit(50);
+      .select('*')
+      .gte('created_at', todayStart)
+      .lt('created_at', tomorrowStart);
     if (error) {
       console.error('Supabase error:', error);
       return res.status(500).json({ error: 'Database error', details: error.message });
