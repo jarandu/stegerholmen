@@ -45,7 +45,7 @@ const createSaleHandler = async (soldItems: CartItem[], paymentMethod: string) =
 const run = async () => {
   try {
     const productsData = await getProducts();
-    products = productsData;
+    products = productsData ?? [];
     filteredProducts = products;
   } catch (error) {
     console.error('Error fetching products:', error);

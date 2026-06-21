@@ -1,10 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createSupabaseClient } from './supabase';
-
-const supabase = createSupabaseClient();
+import { createSupabaseClient } from './supabase.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
+    const supabase = createSupabaseClient();
     console.log('Testing Supabase connection...');
     console.log('Testing table access...');
 

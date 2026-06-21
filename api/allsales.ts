@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createHygraphClient } from './hygraph';
+import { createHygraphClient } from './hygraph.js';
 
 interface HygraphSale {
   soldItems: Array<{

@@ -87,6 +87,7 @@
   onMount(async () => {
     try {
       [images, existingProducts] = await Promise.all([fetchImages(), getProducts()]);
+      existingProducts = existingProducts ?? [];
     } catch (err) {
       error = err instanceof Error ? err.message : 'Noe gikk galt';
     } finally {

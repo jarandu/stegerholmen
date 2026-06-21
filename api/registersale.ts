@@ -1,7 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createSupabaseClient } from './supabase';
-
-const supabase = createSupabaseClient();
+import { createSupabaseClient } from './supabase.js';
 
 interface CartProduct {
   id: string;
@@ -26,6 +24,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    const supabase = createSupabaseClient();
     const { sum, paymentMethod, soldItems, text } = req.body as RegisterSaleBody;
 
     const { data: sale, error: saleError } = await supabase

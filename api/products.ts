@@ -1,7 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createSupabaseClient } from './supabase';
-
-const supabase = createSupabaseClient();
+import { createSupabaseClient } from './supabase.js';
 
 interface CreateProductBody {
   name: string;
@@ -21,6 +19,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    const supabase = createSupabaseClient();
     const { category, search, limit = '100', offset = '0' } = req.query;
 
     let query = supabase
@@ -46,13 +45,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     res.status(200).json(data);
   } catch (error) {
+    const message = error instanceof Error ? error.message : 'Internal server error';
     console.error('API error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: message });
   }
 }
 
 async function handleCreate(req: VercelRequest, res: VercelResponse) {
   try {
+    const supabase = createSupabaseClient();
     const body = req.body as { products?: CreateProductBody[] } | undefined;
     const { products } = body ?? {};
 

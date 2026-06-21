@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createHygraphClient } from './hygraph';
+import { createHygraphClient } from './hygraph.js';
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
   const query = request.body as string;
