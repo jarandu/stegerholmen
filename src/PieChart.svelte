@@ -1,5 +1,7 @@
-<script>
-  export let data = []; // [{ label: 'Glass', value: 100, color: '#006671' }, ...]
+<script lang="ts">
+  import type { PieChartDatum } from './lib/types';
+
+  export let data: PieChartDatum[] = [];
   $: total = data.reduce((sum, d) => sum + d.value, 0);
 
   // Lag conic-gradient string

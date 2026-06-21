@@ -1,24 +1,34 @@
-<script>
+<script lang="ts">
   import { onMount } from 'svelte';
   import Loader from './Loader.svelte';
   import { fetchSales, getProducts, fetchSoldItems } from './utils';
   import PieChart from './PieChart.svelte';
+  import type {
+    Category,
+    CategorySummary,
+    PieChartDatum,
+    Product,
+    Sale,
+    SaleWithItems,
+    SoldItem,
+    SoldItemWithProduct,
+  } from './lib/types';
 
-  let sales = [];
-  let products = [];
-  let soldItems = [];
+  let sales: Sale[] = [];
+  let products: Product[] = [];
+  let soldItems: SoldItem[] = [];
 
-  const getDatesArray = (startDate, endDate) => {
-    const dateArray = [];
-    let currentDate = startDate;
+  const getDatesArray = (startDate: Date, endDate: Date) => {
+    const dateArray: Date[] = [];
+    const currentDate = new Date(startDate);
     while (currentDate <= endDate) {
       dateArray.push(new Date(currentDate));
       currentDate.setDate(currentDate.getDate() + 1);
     }
     return dateArray;
-  }
+  };
 
-  $: salesPerDay = sales.length > 0 ? sales.reduce((acc, curr) => {
+  $: salesPerDay = sales.length > 0 ? sales.reduce<Record<string, number>>((acc, curr) => {
     const date = new Date(curr.time).toISOString().split('T')[0];
     if (!acc[date]) {
       acc[date] = 0;
@@ -46,79 +56,92 @@
     return acc + curr.sum;
   }, 0);
 
-  const getSalesWithItems = (sales, soldItems, count = Infinity) => {
-    // @ts-ignore
-    const x = sales.sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, count);
-    return x.map(sale => {
-      return {
-        ...sale,
-        soldItems: soldItems.filter(item => item.sale_id === sale.id).map(item => {
-          const product = products.find(product => product.id === item.product_id);
+  const getSalesWithItems = (
+    salesList: Sale[],
+    soldItemsList: SoldItem[],
+    count = Infinity
+  ): SaleWithItems[] => {
+    const x = [...salesList]
+      .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+      .slice(0, count);
+
+    return x.map((sale) => ({
+      ...sale,
+      soldItems: soldItemsList
+        .filter((item) => item.sale_id === sale.id)
+        .map((item): SoldItemWithProduct => {
+          const product = products.find((p) => p.id === item.product_id);
           return {
             ...item,
-            name: product.name,
-            category: product.category,
-          }
-        })
-      }
-    });
-  }
+            name: product?.name,
+            category: product?.category,
+          };
+        }),
+    }));
+  };
 
   $: todaysSales = getSalesWithItems(today, soldItems);
 
   $: todaysSoldItems = todaysSales.flatMap(sale => sale.soldItems);
 
-  $: todaysProducts = todaysSoldItems.reduce((acc, curr) => {
-    if (!acc[curr.name]) {
-      acc[curr.name] = 0;
+  $: todaysProducts = todaysSoldItems.reduce<Record<string, number>>((acc, curr) => {
+    const name = curr.name ?? 'Ukjent';
+    if (!acc[name]) {
+      acc[name] = 0;
     }
-    acc[curr.name] += 1;
+    acc[name] += 1;
     return acc;
   }, {});
 
-  const categoriesColors = {
+  const categoriesColors: Record<Category, string> = {
     'Dryck': '#e9a700',
     'Glass': '#006671',
     'Mat': '#950454',
     'Godis': 'rgb(209 71 71)',
   }
 
-  const getSummary = (soldItems) => {
-    const categoriesWithProfitMargin = {
-      'Dryck': 0.67,
-      'Glass': 0.3,
-      'Mat': 0.5,
-      'Godis': 0.25
-    }
-    return soldItems.reduce((acc, curr) => {
-      if (!acc[curr.category]) {
-        acc[curr.category] = {
+  const getSummary = (items: SoldItemWithProduct[]) => {
+    const categoriesWithProfitMargin: Record<Category, number> = {
+      Dryck: 0.67,
+      Glass: 0.3,
+      Mat: 0.5,
+      Godis: 0.25,
+    };
+
+    return items.reduce<Record<string, CategorySummary>>((acc, curr) => {
+      const category = curr.category ?? 'Dryck';
+      if (!acc[category]) {
+        acc[category] = {
           sum: 0,
           count: 0,
         };
       }
-      acc[curr.category].sum += curr.price * categoriesWithProfitMargin[curr.category];
-      acc[curr.category].count += 1;
+      acc[category].sum += curr.price * (categoriesWithProfitMargin[category as Category] ?? 0);
+      acc[category].count += 1;
       return acc;
     }, {});
-  }
+  };
 
   $: todaysSummary = getSummary(todaysSoldItems);
   $: todaysTotalProfit = Object.values(todaysSummary).reduce((acc, curr) => {
     return acc + curr.sum;
   }, 0);
 
-  $: pieData = todaysSummary ? Object.entries(categoriesColors).map(([category, color]) => {
-    if (!todaysSummary[category]) return null;
-    return {
-      label: category,
-      value: todaysSummary[category].sum,
-      color,
-    }
-  }).filter(Boolean) : [];
+  $: pieData = todaysSummary
+    ? (Object.entries(categoriesColors)
+        .map(([category, color]) => {
+          if (!todaysSummary[category]) return null;
+          return {
+            label: category,
+            value: todaysSummary[category].sum,
+            color,
+          };
+        })
+        .filter((entry): entry is PieChartDatum => entry !== null))
+    : [];
 
-  const getPaymentMethods = (sales) => { 
-    return sales.reduce((acc, curr) => {
+  const getPaymentMethods = (salesList: Sale[]) => {
+    return salesList.reduce<Record<string, number>>((acc, curr) => {
       if (!acc[curr.payment_method]) {
         acc[curr.payment_method] = 0;
       }
@@ -219,7 +242,7 @@
       {/if}
       <h2>Siste ti salg</h2>
       <ul class="receipts">
-        {#each todaysSales.slice(0, 10) as sale}
+        {#each todaysSales.slice(0, 100) as sale}
           <li class="receipt">
             <div class="timestamp">
               {new Date(sale.time).toLocaleString('nb-NO', {
@@ -245,7 +268,7 @@
       </ul>
       <h2>Dagens vinnerprodukter</h2>
       <ul class="products">
-        {#each Object.entries(todaysProducts).sort((a, b) => b[1] - a[1]).slice(0, 10) as [product, amount], i}
+        {#each Object.entries(todaysProducts).sort((a, b) => b[1] - a[1]).slice(0, 20) as [product, amount], i}
           <li>
             {i + 1}. {product} ({amount})
           </li>

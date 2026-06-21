@@ -1,21 +1,22 @@
-<script>
+<script lang="ts">
 
 import { onMount } from 'svelte';
 import { getProducts, createSale } from './utils';
 import { writable } from 'svelte/store';
 import Loader from './Loader.svelte';
+import type { CartItem, Category, Product } from './lib/types';
 
-let products = [];
-let category = null;
+let products: Product[] = [];
+let category: Category | null = null;
 let cartText = '';
 let showCartText = false;
 let checkoutWaiting = false;
 
-const cart = writable([]);
+const cart = writable<CartItem[]>([]);
 
-$: filteredProducts = category ? products.filter(product => product.category === category) : products;
+$: filteredProducts = category ? products.filter((product) => product.category === category) : products;
 
-const createSaleHandler = async (soldItems, paymentMethod, fullfilled = 'true') => {
+const createSaleHandler = async (soldItems: CartItem[], paymentMethod: string) => {
   checkoutWaiting = true;
   const sum = $cart.reduce((acc, curr) => {
     return acc + curr.product.price * curr.quantity;
@@ -51,19 +52,18 @@ const run = async () => {
   }
 }
 
-const addToCard = (product) => {
+const addToCard = (product: Product) => {
   if (product.name == 'Godis') {
-    if ($cart.find(i => i.product.name == 'Godis')) return;
-    const price = prompt("Angi pris");
+    if ($cart.find((i) => i.product.name == 'Godis')) return;
+    const price = prompt('Angi pris');
     if (!price) return;
-    cart.update(items => {
-      items.push({ product: {...product, price}, quantity: 1 });
+    cart.update((items) => {
+      items.push({ product: { ...product, price: parseFloat(price) }, quantity: 1 });
       return items;
     });
-  }
-  else {
-    cart.update(items => {
-      const item = items.find(i => i.product.id === product.id);
+  } else {
+    cart.update((items) => {
+      const item = items.find((i) => i.product.id === product.id);
       if (item) {
         item.quantity++;
       } else {
@@ -72,7 +72,7 @@ const addToCard = (product) => {
       return items;
     });
   }
-}
+};
 
 // const expand = (category) => {
 //   return () => {
@@ -92,9 +92,11 @@ const addToCard = (product) => {
 //   node.style.setProperty('--height', ul.scrollHeight + 57 + 'px');
 // }
 
-const filter = (cat) => {
+const filterCategories: Category[] = ['Dryck', 'Mat', 'Glass'];
+
+const filter = (cat: Category | null) => {
   category = cat;
-}
+};
 
 onMount(async () => {
   run();
@@ -117,6 +119,7 @@ onMount(async () => {
         <button class="remove" on:click={() => {
           cart.update(items => {
             const item = items.find(i => i.product.id === product.id);
+            if (!item) return items;
             if (item.quantity > 1) {
               item.quantity--;
             } else {
@@ -172,14 +175,14 @@ onMount(async () => {
 {:else}
 <div class="products-categories">
   <button class="reset" on:click={() => filter(null)}>Alla</button>
-  {#each ['Dryck', 'Mat', 'Glass'] as cat}
+  {#each filterCategories as cat}
     <button class:active={category === cat} class={cat.toLowerCase()} on:click={() => filter(cat)}>{cat}</button>
   {/each}
 </div>
     <ul>
       {#each filteredProducts as product}
         <li class="product {product.category.toLowerCase()}">
-          <img src="./images/{product.slug}.jpg" alt="" />
+          <img src="./images/{product.image || product.slug + '.jpg'}" alt="" />
           <div class="product-info">
             <h4>{product.name}</h4>
             {product.price} kr
