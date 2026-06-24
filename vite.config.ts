@@ -3,15 +3,14 @@ import { readdirSync, mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 
-const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif']);
+const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.gif', '.avif']);
 const GENERATED_DIR = join(process.cwd(), 'src', 'generated');
 const MANIFEST_PATH = join(GENERATED_DIR, 'images-manifest.json');
+const IMAGES_DIR = join(process.cwd(), 'public', 'images');
 
 function generateImagesManifest(): void {
-  const imagesDir = join(process.cwd(), 'public', 'images');
-
   try {
-    const files = readdirSync(imagesDir);
+    const files = readdirSync(IMAGES_DIR);
     const images = files
       .filter((file) => IMAGE_EXTENSIONS.has(file.slice(file.lastIndexOf('.')).toLowerCase()))
       .sort((a, b) => a.localeCompare(b, 'nb'));
@@ -30,8 +29,15 @@ function imagesManifestPlugin(): Plugin {
     buildStart() {
       generateImagesManifest();
     },
-    configureServer() {
+    configureServer(server) {
       generateImagesManifest();
+      server.watcher.add(IMAGES_DIR);
+      server.watcher.on('add', (path) => {
+        if (path.startsWith(IMAGES_DIR)) generateImagesManifest();
+      });
+      server.watcher.on('unlink', (path) => {
+        if (path.startsWith(IMAGES_DIR)) generateImagesManifest();
+      });
     },
   };
 }

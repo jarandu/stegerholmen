@@ -42,6 +42,14 @@ export interface CreateProductInput {
   image?: string;
 }
 
+export interface UpdateProductInput {
+  name: string;
+  price: number;
+  slug: string;
+  category: Category;
+  image?: string;
+}
+
 export interface CreateSaleInput {
   sum: number;
   paymentMethod: string;

@@ -5,6 +5,7 @@ import type {
   Product,
   Sale,
   SoldItem,
+  UpdateProductInput,
 } from './lib/types';
 
 export const fetchSales = async (): Promise<Sale[]> => {
@@ -67,6 +68,27 @@ export const createProducts = async (products: CreateProductInput[]): Promise<Pr
 
   const data = (await response.json()) as { products: Product[] };
   return data.products;
+};
+
+export const updateProduct = async (id: string, product: UpdateProductInput): Promise<Product> => {
+  const response = await fetch('/api/products', {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ id, ...product }),
+  });
+
+  if (!response.ok) {
+    const data = (await response.json().catch(() => ({}))) as { error?: string };
+    throw new Error(data.error || 'Failed to update product');
+  }
+
+  localStorage.removeItem('products');
+  localStorage.removeItem('products_cached_at');
+
+  const data = (await response.json()) as { product: Product };
+  return data.product;
 };
 
 export const createSale = async (saleData: CreateSaleInput): Promise<Sale> => {

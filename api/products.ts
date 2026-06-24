@@ -14,6 +14,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return handleCreate(req, res);
   }
 
+  if (req.method === 'PATCH') {
+    return handleUpdate(req, res);
+  }
+
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -86,6 +90,47 @@ async function handleCreate(req: VercelRequest, res: VercelResponse) {
     res.status(201).json({ products: data });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Could not create products';
+    console.error('API error:', error);
+    res.status(400).json({ error: message });
+  }
+}
+
+async function handleUpdate(req: VercelRequest, res: VercelResponse) {
+  try {
+    const supabase = createSupabaseClient();
+    const body = req.body as CreateProductBody & { id?: string };
+    const { id, name, price, slug, category, image } = body ?? {};
+
+    if (!id) {
+      return res.status(400).json({ error: 'Product id required' });
+    }
+
+    if (!name || price === undefined || !slug) {
+      return res.status(400).json({ error: 'Name, price and slug required' });
+    }
+
+    const { data, error } = await supabase
+      .from('products')
+      .update({
+        name: name.trim(),
+        price: parseFloat(String(price)),
+        slug: slug.trim(),
+        category: category || 'Dryck',
+        image: image || `${slug.trim()}.jpg`,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Supabase error:', error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.status(200).json({ product: data });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Could not update product';
     console.error('API error:', error);
     res.status(400).json({ error: message });
   }

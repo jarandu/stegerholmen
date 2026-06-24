@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import Loader from './Loader.svelte';
-  import { createProducts, fetchImages, getProducts } from './utils';
+  import { createProducts, fetchImages, getProducts, updateProduct } from './utils';
   import type { Category, Product, ProductRow } from './lib/types';
 
   const categories: Category[] = ['Dryck', 'Mat', 'Glass', 'Godis'];
@@ -18,6 +18,9 @@
   let existingProducts: Product[] = [];
   let rows: ProductRow[] = [emptyRow()];
   let activePicker: number | null = null;
+  let editingId: string | null = null;
+  let editRow: ProductRow = emptyRow();
+  let editPickerOpen = false;
   let loading = true;
   let saving = false;
   let message = '';
@@ -50,6 +53,71 @@
 
   const validRows = (): ProductRow[] =>
     rows.filter((row) => row.name.trim() && row.price !== '' && row.slug.trim() && row.image);
+
+  const productToRow = (product: Product): ProductRow => ({
+    name: product.name,
+    price: String(product.price),
+    category: product.category,
+    slug: product.slug,
+    image: product.image || '',
+  });
+
+  const isRowValid = (row: ProductRow) =>
+    row.name.trim() && row.price !== '' && row.slug.trim() && row.image;
+
+  const startEdit = (product: Product) => {
+    editingId = product.id;
+    editRow = productToRow(product);
+    editPickerOpen = false;
+    activePicker = null;
+    message = '';
+    error = '';
+  };
+
+  const cancelEdit = () => {
+    editingId = null;
+    editPickerOpen = false;
+  };
+
+  const selectEditImage = (filename: string) => {
+    editRow = {
+      ...editRow,
+      image: filename,
+      slug: imageSlug(filename),
+    };
+    editPickerOpen = false;
+  };
+
+  const saveEdit = async () => {
+    if (!editingId || !isRowValid(editRow)) {
+      error = 'Fyll inn navn, pris og bilde.';
+      message = '';
+      return;
+    }
+
+    saving = true;
+    message = '';
+    error = '';
+
+    try {
+      const updated = await updateProduct(editingId, {
+        name: editRow.name.trim(),
+        price: parseFloat(editRow.price),
+        slug: editRow.slug.trim(),
+        category: editRow.category,
+        image: editRow.image,
+      });
+
+      existingProducts = existingProducts.map((p) => (p.id === editingId ? updated : p));
+      message = `"${updated.name}" er oppdatert.`;
+      editingId = null;
+      editPickerOpen = false;
+    } catch (err) {
+      error = err instanceof Error ? err.message : 'Noe gikk galt';
+    } finally {
+      saving = false;
+    }
+  };
 
   const save = async () => {
     const products = validRows();
@@ -121,11 +189,11 @@
           <div class="row">
             <label>
               Navn
-              <input type="text" bind:value={row.name} placeholder="Kaffebulle" />
+              <input type="text" bind:value={row.name} placeholder="Legg inn navn" />
             </label>
             <label>
               Pris
-              <input type="number" min="0" step="1" bind:value={row.price} placeholder="25" />
+              <input type="number" min="0" step="1" bind:value={row.price} />
             </label>
             <label>
               Kategori
@@ -198,12 +266,87 @@
         <h3>Eksisterende produkter ({existingProducts.length})</h3>
         <ul>
           {#each existingProducts as product}
-            <li>
-              <img src="/images/{product.image || product.slug + '.jpg'}" alt="" />
-              <div>
-                <strong>{product.name}</strong>
-                <span>{product.price} kr · {product.category}</span>
-              </div>
+            <li class:editing={editingId === product.id}>
+              {#if editingId === product.id}
+                <div class="edit-form">
+                  <label>
+                    Navn
+                    <input type="text" bind:value={editRow.name} />
+                  </label>
+                  <label>
+                    Pris
+                    <input type="number" min="0" step="1" bind:value={editRow.price} />
+                  </label>
+                  <label>
+                    Kategori
+                    <select bind:value={editRow.category}>
+                      {#each categories as category}
+                        <option value={category}>{category}</option>
+                      {/each}
+                    </select>
+                  </label>
+                  <div class="image-field">
+                    <span>Bilde</span>
+                    {#if editRow.image}
+                      <button
+                        type="button"
+                        class="image-preview"
+                        on:click={() => (editPickerOpen = !editPickerOpen)}
+                      >
+                        <img src="/images/{editRow.image}" alt="" />
+                        <span>{editRow.image}</span>
+                      </button>
+                    {:else}
+                      <button
+                        type="button"
+                        class="pick-image"
+                        on:click={() => (editPickerOpen = !editPickerOpen)}
+                      >
+                        Velg bilde
+                      </button>
+                    {/if}
+                  </div>
+                  <div class="edit-actions">
+                    <button type="button" class="cancel" disabled={saving} on:click={cancelEdit}>
+                      Avbryt
+                    </button>
+                    <button type="button" class="save-edit" disabled={saving} on:click={saveEdit}>
+                      {#if saving}
+                        Lagrer…
+                      {:else}
+                        Lagre
+                      {/if}
+                    </button>
+                  </div>
+
+                  {#if editPickerOpen}
+                    <div class="image-picker">
+                      <p>Velg fra public/images ({images.length} bilder)</p>
+                      <div class="image-grid">
+                        {#each images as filename}
+                          <button
+                            type="button"
+                            class:selected={editRow.image === filename}
+                            on:click={() => selectEditImage(filename)}
+                          >
+                            <img src="/images/{filename}" alt={filename} loading="lazy" />
+                            <span>{filename}</span>
+                          </button>
+                        {/each}
+                      </div>
+                    </div>
+                  {/if}
+                </div>
+              {:else}
+                <img src="/images/{product.image || product.slug + '.jpg'}" alt="" />
+                <div class="product-info">
+                  <strong>{product.name}</strong>
+                  <span>{product.price} kr · {product.category}</span>
+                </div>
+                <button type="button" class="edit-btn" on:click={() => startEdit(product)}>
+                  Rediger
+                </button>
+              {/if}
             </li>
           {/each}
         </ul>
@@ -440,9 +583,12 @@
   }
 
   .existing ul {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+    display: flex;
+    flex-direction: column;
     gap: 0.75rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
   }
 
   .existing li {
@@ -453,6 +599,74 @@
     background: white;
     border-radius: 0.5rem;
     box-shadow: 0 0 8px rgba(0, 0, 0, 0.06);
+  }
+
+  .existing li.editing {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .product-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .edit-btn {
+    all: unset;
+    padding: 0.45rem 0.75rem;
+    border: 1px solid #333;
+    border-radius: 0.4rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .edit-form {
+    display: grid;
+    grid-template-columns: 1.5fr 0.75fr 1fr 1.25fr;
+    gap: 0.75rem;
+    align-items: end;
+    width: 100%;
+  }
+
+  .edit-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: end;
+  }
+
+  .cancel,
+  .save-edit {
+    all: unset;
+    padding: 0.55rem 0.85rem;
+    border-radius: 0.4rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .cancel {
+    border: 1px solid #999;
+    color: #555;
+  }
+
+  .save-edit {
+    background: #28903f;
+    color: white;
+  }
+
+  .cancel:disabled,
+  .save-edit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .edit-form .image-picker {
+    grid-column: 1 / -1;
+    margin-top: 0.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
   }
 
   .existing img {
@@ -473,6 +687,15 @@
   @media (max-width: 720px) {
     .row {
       grid-template-columns: 1fr 1fr;
+    }
+
+    .edit-form {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .edit-actions {
+      grid-column: 1 / -1;
+      justify-content: flex-end;
     }
 
     .image-field,
